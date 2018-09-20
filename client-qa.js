@@ -1,52 +1,57 @@
 const net = require('net');
 const fs = require('fs');
+const shuffle = require('shuffle-array');
 const port = 8124;
-const string = 'QA';
-const bad = 'DEC';
-const good = 'ACK';
+const client = new net.Socket();
 
-const clientQa = new net.Socket();
-let currentIndex = -1;
-clientQa.setEncoding('utf8');
-
-let questions = [];
-clientQa.connect({port: port, host: '127.0.0.1'}, () => {
-    fs.readFile("qa.json", (err, text) => {
+let arr;
+let currInd = -1;
+let servAnsw;
+client.setEncoding('utf8');
+client.connect(port, function () {
+    console.log('Connected');
+    fs.readFile('qa.json', (err, text) => {
         if (!err) {
-            questions = JSON.parse(text);
-            clientQa.write(string);
+            arr = JSON.parse(text);
+            shuffle(arr);
+            client.write('QA');
         }
-        else console.error(err);
-    });
+        else {
+            console.log(err);
+        }
+    })
 });
 
-clientQa.on('data', (data) => {
-    if (data === bad)
-        clientQa.destroy();
-    if (data === good)
+client.on('data',  (data) => {
+    if (data === 'DEC') {
+        client.destroy();
+    }
+    if (data === 'ACK') {
         sendQuestion();
+    }
     else {
-        let qst = questions[currentIndex];
-        let answer = qst.good;
-        console.log('\n' + qst.quest);
-        console.log('Answer:' + data);
-        console.log('Server:' + answer);
-        console.log('Result:' + (data === answer ? 'It is a right answer': 'Bad answer'));
+        if (data === '1') {
+            servAnsw = arr[currInd].goodAns;
+        }
+        else {
+            servAnsw = arr[currInd].badAns;
+        }
+        console.log('Question: ' + arr[currInd].question);
+        console.log('Good Answer: ' + arr[currInd].goodAns);
+        console.log('Server Answer: ' + servAnsw);
         sendQuestion();
     }
 });
 
-clientQa.on('close', function () {
+client.on('close', function () {
     console.log('Connection closed');
 });
 
-
-
 function sendQuestion() {
-    if (currentIndex < questions.length -1) {
-        let qst = questions[++currentIndex].quest;
-        clientQa.write(qst);
+    if (currInd < arr.length - 1) {
+        client.write(arr[++currInd].question);
     }
-    else
-        clientQa.destroy();
+    else {
+        client.destroy();
+    }
 }

@@ -1,47 +1,36 @@
 const net = require('net');
 const fs = require('fs');
 const port = 8124;
-const clientString = 'QA';
-const good = 'ACK';
-const bad = 'DEC';
-const logger = fs.createWriteStream('client_id.log');
-
 let seed = 0;
+let statistic = 0;
 
 const server = net.createServer((client) => {
-    console.log('Client connected');
+    const logger = fs.createWriteStream('client_'+ seed +'.txt');
+    logger.write('Client ' + seed + ' disconnected\n');
+    client.id = seed++;
     client.setEncoding('utf8');
 
-    client.on('data', (data, err) =>
-    {
-        if (err) console.error(err);
-        else if (!err && data === clientString)
-        {
-            client.id = Date.now() + seed++;
-            writeLog('Client #' + client.id + ' connected\n');
-            client.write(data === clientString ? good : bad);
+    client.on('data', (data) => {
+        if (data === 'QA') {
+            client.write('ACK');
+            console.log("New user with ID: " + seed);
+            statistic = 0
         }
-        else if (!err && data !== clientString) {
-            writeLog('Client #' + client.id + ' has asked: ' + data + '\n');
-            let answer = generateAnswer();
-            writeLog('Server answered to Client #' + client.id + ': ' + answer + '\n');
+        else{
+            logger.write('Quastion: ' + data);
+            let answer = Math.random() > 0.5 ? '1' : '0';
+            if (answer == '1') statistic++;
+            logger.write('\nAnswer: ' + answer + '\n');
+            logger.write('Statistic: ' + statistic + ' right answer\n')
             client.write(answer);
         }
     });
-    client.on('end', () =>
-    {
-        logger.write('Client #'+ client.id+ ' disconnected');
-        console.log('Client #'+ client.id+ ' disconnected')
+
+    client.on('end', () => {
+        logger.write('client ' + client.id + ' disconnected\n');
     });
 });
-function writeLog(data)
-{
-    logger.write(data);
-}
-function generateAnswer()
-{
-    return Math.random() > 0.5 ? '1' : '0';
-}
+
 server.listen(port, () => {
-    console.log(`Server listening on localhost: ${port}`);
+    console.log(`Server listening on localhost:${port}`);
 });

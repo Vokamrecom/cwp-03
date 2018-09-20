@@ -1,18 +1,17 @@
 [
   {
-    "quest": "Zero == undefined?",
-    "ans": "1"
+    "question": "Is Josh Snow a King of the North?",
+    "goodAns": "True",
+    "badAns": "False"
   },
   {
-    "quest": "Minsk is a capital of Belarus?",
-    "ans": "1"
+    "question": "Do you use callbacks in callbacks?",
+    "goodAns": "True",
+    "badAns": "False"
   },
   {
-    "quest" : "1 is more than 2?",
-    "good" : "0"
-  },
-  {
-    "quest" : "Chester Bennigton is alive?",
-    "good" : "0"
+    "question": "2+2",
+    "goodAns": "4",
+    "badAns": "6"
   }
 ]
