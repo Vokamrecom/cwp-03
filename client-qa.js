@@ -5,24 +5,24 @@ const string = 'QA';
 const bad = 'DEC';
 const good = 'ACK';
 
-const client = new net.Socket();
+const clientQa = new net.Socket();
 let currentIndex = -1;
-client.setEncoding('utf8');
+clientQa.setEncoding('utf8');
 
 let questions = [];
-client.connect({port: port, host: '127.0.0.1'}, () => {
+clientQa.connect({port: port, host: '127.0.0.1'}, () => {
     fs.readFile("qa.json", (err, text) => {
         if (!err) {
             questions = JSON.parse(text);
-            client.write(string);
+            clientQa.write(string);
         }
         else console.error(err);
     });
 });
 
-client.on('data', (data) => {
+clientQa.on('data', (data) => {
     if (data === bad)
-        client.destroy();
+        clientQa.destroy();
     if (data === good)
         sendQuestion();
     else {
@@ -36,7 +36,7 @@ client.on('data', (data) => {
     }
 });
 
-client.on('close', function () {
+clientQa.on('close', function () {
     console.log('Connection closed');
 });
 
@@ -45,8 +45,8 @@ client.on('close', function () {
 function sendQuestion() {
     if (currentIndex < questions.length -1) {
         let qst = questions[++currentIndex].quest;
-        client.write(qst);
+        clientQa.write(qst);
     }
     else
-        client.destroy();
+        clientQa.destroy();
 }
