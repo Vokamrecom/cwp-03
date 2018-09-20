@@ -2,56 +2,57 @@ const net = require('net');
 const fs = require('fs');
 const shuffle = require('shuffle-array');
 const port = 8124;
-const client = new net.Socket();
+const clientString = 'QA';
+const good = 'ACK';
+const bad = 'DEC';
+let index = -1;
+let questions = [];
 
-let arr;
-let currInd = -1;
-let servAnsw;
+const client = new net.Socket();
 client.setEncoding('utf8');
-client.connect(port, function () {
-    console.log('Connected');
-    fs.readFile('qa.json', (err, text) => {
-        if (!err) {
-            arr = JSON.parse(text);
-            shuffle(arr);
-            client.write('QA');
-        }
-        else {
-            console.log(err);
-        }
-    })
+
+client.connect({port: port, host: '127.0.0.1'}, (err) => {
+  if(err) console.error("Соединение не установлено");
+  fs.readFile("qa.json", (err, text) => {
+    if (err) console.error("Невозможно прочитать файл")
+    else {
+      console.log("Connected")
+      questions = JSON.parse(text);
+      shuffle(questions);
+      client.write(clientString);
+    }
+  });
 });
 
-client.on('data',  (data) => {
-    if (data === 'DEC') {
-        client.destroy();
-    }
-    if (data === 'ACK') {
-        sendQuestion();
-    }
-    else {
-        if (data === '1') {
-            servAnsw = arr[currInd].goodAns;
-        }
-        else {
-            servAnsw = arr[currInd].badAns;
-        }
-        console.log('Question: ' + arr[currInd].question);
-        console.log('Good Answer: ' + arr[currInd].goodAns);
-        console.log('Server Answer: ' + servAnsw);
-        sendQuestion();
-    }
+client.on('data', (data) => {
+  if (data === bad){
+    console.log("Not connected");
+    client.destroy();
+  }
+    
+  if (data === good)
+    sendQuestion();
+
+  if (data !== good && data !== bad) {
+    let qst = questions[index];
+    let answer = qst.good;
+    console.log(`\nQuestion: ${qst.question}`);
+    console.log(`---Right answer: ${answer}`);
+    console.log(`---Server's answer: ${data}`);
+    console.log('---Result: ' + (data === answer ? 'Right answer!': 'Wrong answer!'));
+    sendQuestion();
+  }
 });
 
 client.on('close', function () {
-    console.log('Connection closed');
+  console.log('Connection closed');
 });
 
 function sendQuestion() {
-    if (currInd < arr.length - 1) {
-        client.write(arr[++currInd].question);
-    }
-    else {
-        client.destroy();
-    }
+  if (index < questions.length - 1) {
+    let qst = questions[++index].question;
+    client.write(qst);
+  }
+  else
+    client.destroy();
 }
